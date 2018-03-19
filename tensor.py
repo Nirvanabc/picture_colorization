@@ -12,13 +12,24 @@ def bias_variable(shape):
     return tf.Variable(initial)
 
 
-def conv_layer(kernel, in_chan, out_chan, tensor, strides):
+# change "is_training" !!!
+def conv_layer(kernel, in_chan, out_chan, tensor, strides,
+               is_training = True):
     W_conv = weight_variable([kernel, kernel, in_chan,
                                out_chan])
     b_conv = bias_variable([out_chan])
     conv = tf.nn.conv2d(tensor, W_conv, strides = strides,
                         padding=padding)
-    h = tf.nn.relu(tf.nn.bias_add(conv, b_conv))
+    batch_norm = tf.layers.batch_normalization(
+        inputs=conv,
+        axis=-1,
+        momentum=0.9,
+        epsilon=0.001,
+        center=True,
+        scale=True,
+        training = is_training)
+
+    h = tf.nn.relu(tf.nn.bias_add(batch_norm, b_conv))
     return h
 
 
@@ -27,7 +38,7 @@ x = tf.placeholder(tf.float32, \
                             width, in_chan_11], name='x')
 
 # target
-y_ = tf.placeholder(tf.uint8, \
+y_ = tf.placeholder(tf.float32, \
                     shape = [None, height,
                              width, out_chan], name='y')
 
@@ -38,6 +49,7 @@ low_11 = conv_layer(kernel, in_chan_11, out_chan_11, x,
                   strides_2)
 low_12 = conv_layer(kernel, in_chan_12, out_chan_12, low_11,
                   strides_1)
+
 
 # h/2*w/2*128 -> h/4*w/4*128 -> h/4*w/4*256
 low_21 = conv_layer(kernel, in_chan_21, in_chan_21, low_12,
@@ -119,7 +131,7 @@ b_read = bias_variable([out_chan])
 
 conv = tf.nn.conv2d(color_conv_3, W_read, strides = strides_1,
                         padding=padding)
-y_conv = tf.tf.nn.bias_add(conv, b_read)
+y_conv = tf.nn.bias_add(conv, b_read)
 
 
 ### now train and evaluate
@@ -140,7 +152,7 @@ def map_func(x):
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
-    for i in range(1): #epochs):
+    for i in range(epochs):
         batch = next(yield_batch)
         _, image_train = sess.run([train_step, y_conv],
                          feed_dict={x: batch[0],
