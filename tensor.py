@@ -1,7 +1,5 @@
 import numpy as np
 import tensorflow as tf
-# import matplotlib.pyplot as plt
-# from skimage import io
 from play_with_image import *
 from constants import *
 
@@ -128,14 +126,17 @@ y_conv = tf.tf.nn.bias_add(conv, b_read)
 cross_entropy = tf.reduce_mean(
     tf.nn.sigmoid_cross_entropy_with_logits(labels=y_, \
                                             logits=y_conv))
-train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
-correct_prediction = tf.equal(tf.argmax(y_conv, 1), \
-                              tf.argmax(y_, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, \
-                                  tf.float32), name = 'accuracy')
+train_step = tf.train.AdadeltaOptimizer().minimize(cross_entropy)
+correct_prediction = tf.norm(y_ - y_conv)
 
 yield_batch = convert_to_grayscale(batch_size)
 test_batch = next(yield_batch)
+
+def map_func(x):
+    if x < 0: return 0
+    if x > 255: return 255
+    return x
+
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -144,15 +145,17 @@ with tf.Session() as sess:
         _, image_train = sess.run([train_step, y_conv],
                          feed_dict={x: batch[0],
                                     y_: batch[1]})
-        acc = sess.run(accuracy, feed_dict={x:test_batch[0],
-                                            y_: test_batch[1]})
+        acc = sess.run(correct_prediction, feed_dict=
+                       {x:test_batch[0], y_: test_batch[1]})
         
         print("step %d, acc %.4f" % (i, acc))
-        predicted_image = np.concatenate((batch[0][0],
-                                          image_train[0]),
-                                         axis=3)
-        image_uint = sess.run(tf.cast(predicted_image, tf.uint8))
-        rgb_image = cv2.cvtColor(image_uint[0],
-                                 cv2.COLOR_YUV2RGB)
-        cv2.imwrite("new_%d.jpeg" % i, rgb_image)
         
+#         image_train = np.array([map_func(x) for 
+#         predicted_image = np.concatenate((batch[0][0],
+#                                           image_train[0]),
+#                                          axis=3)
+#         image_uint = sess.run(tf.cast(predicted_image, tf.uint8))
+#         rgb_image = cv2.cvtColor(image_uint[0],
+#                                  cv2.COLOR_YUV2RGB)
+#         cv2.imwrite("new_%d.jpeg" % i, rgb_image)
+#         
