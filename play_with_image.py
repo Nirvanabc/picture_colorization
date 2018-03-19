@@ -4,8 +4,11 @@ import cv2
 from constants import *
 
 
-## FIXME! It should give any size any time, not set in
+## FIXME!
+# 1) It should give any size any time, not set in
 # the beginning
+# 2) It should return array of real sizes to print real image
+# if I want
 def convert_to_grayscale(batch_size):
     '''
     use next(batch) to obtain image list
@@ -15,7 +18,7 @@ def convert_to_grayscale(batch_size):
     count = 0
     for i in range(1, max_length - max_length % batch_size + 1):
         index = '0'*(4 - len(str(i))) + str(i)
-        image = cv2.imread("test_airplane/image_" +
+        image = cv2.imread("airplane/image_" +
                            index +
                            ".jpg")
         image_yuv = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
@@ -41,11 +44,11 @@ def convert_to_grayscale(batch_size):
 # with tf.Session() as sess:
 #     box_image = sess.run(box_image)
 # cv2.imwrite("box.jpeg", box_image)
-
-
-image = cv2.imread("1.JPEG")
-y = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
-square_image = tf.image.resize_images(y, [height, width])
-with tf.Session() as sess:
-    batch = sess.run(square_image)
-                    
+# 
+# 
+# image = cv2.imread("1.JPEG")
+# y = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
+# square_image = tf.image.resize_images(y, [height, width])
+# with tf.Session() as sess:
+#     batch = sess.run(square_image)
+#                     

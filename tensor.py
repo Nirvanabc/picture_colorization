@@ -1,6 +1,7 @@
+import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
-from skimage import io
+# import matplotlib.pyplot as plt
+# from skimage import io
 from play_with_image import *
 from constants import *
 
@@ -12,17 +13,6 @@ def bias_variable(shape):
     initial = tf.constant(0.1, shape=shape)
     return tf.Variable(initial)
 
-x = tf.placeholder(tf.float32, \
-                   shape = [None, height,
-                            width, in_chan_11], name='x')
-
-# target
-y_ = tf.placeholder(tf.uint8, \
-                    shape = [None, height,
-                             width, in_chan_11], name='y')
-
-# x_tensor = tf.reshape(x, [-1, height, width, in_chan_11])
-
 
 def conv_layer(kernel, in_chan, out_chan, tensor, strides):
     W_conv = weight_variable([kernel, kernel, in_chan,
@@ -32,6 +22,16 @@ def conv_layer(kernel, in_chan, out_chan, tensor, strides):
                         padding=padding)
     h = tf.nn.relu(tf.nn.bias_add(conv, b_conv))
     return h
+
+
+x = tf.placeholder(tf.float32, \
+                   shape = [None, height,
+                            width, in_chan_11], name='x')
+
+# target
+y_ = tf.placeholder(tf.uint8, \
+                    shape = [None, height,
+                             width, out_chan], name='y')
 
 
 ### LOW_LAYER_FEATUES_NETWORK
@@ -115,15 +115,18 @@ color_conv_3 = conv_layer(kernel, out_chan_col_2, out_chan_col_3,
 
 
 ### READOUT LAYER
-W_read = weight_variable([out_chan_col_3, class_num])
-b_read = bias_variable([class_num])
+W_read = weight_variable([kernel, kernel,
+                          out_chan_col_3, out_chan])
+b_read = bias_variable([out_chan])
 
-y_conv = tf.nn.bias_add(tf.matmul(h_fc1_drop, W_fc2), b_fc2)
+conv = tf.nn.conv2d(color_conv_3, W_read, strides = strides_1,
+                        padding=padding)
+y_conv = tf.tf.nn.bias_add(conv, b_read)
 
 
 ### now train and evaluate
 cross_entropy = tf.reduce_mean(
-    tf.nn.softmax_cross_entropy_with_logits(labels=y_, \
+    tf.nn.sigmoid_cross_entropy_with_logits(labels=y_, \
                                             logits=y_conv))
 train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 correct_prediction = tf.equal(tf.argmax(y_conv, 1), \
@@ -133,13 +136,23 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, \
 
 yield_batch = convert_to_grayscale(batch_size)
 test_batch = next(yield_batch)
+
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
-    for i in range(epochs):
+    for i in range(1): #epochs):
         batch = next(yield_batch)
-        sess.run(train_step, feed_dict={x: batch[0],
-                                        y_: batch[1]})
+        _, image_train = sess.run([train_step, y_conv],
+                         feed_dict={x: batch[0],
+                                    y_: batch[1]})
         acc = sess.run(accuracy, feed_dict={x:test_batch[0],
                                             y_: test_batch[1]})
-        print("step %d, acc %.2f" % (i, acc))
+        
+        print("step %d, acc %.4f" % (i, acc))
+        predicted_image = np.concatenate((batch[0][0],
+                                          image_train[0]),
+                                         axis=3)
+        image_uint = sess.run(tf.cast(predicted_image, tf.uint8))
+        rgb_image = cv2.cvtColor(image_uint[0],
+                                 cv2.COLOR_YUV2RGB)
+        cv2.imwrite("new_%d.jpeg" % i, rgb_image)
         

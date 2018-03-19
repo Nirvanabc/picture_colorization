@@ -1,17 +1,17 @@
-batch_size = 50
+batch_size = 5
 # test_batch_size = 200
 height = width = 600
 padding = "SAME"
 max_length = 800
 
-epochs = 20
-
+epochs = 2#60
 kernel = 3
-
-class_num = 2
 
 strides_1 = [1,1,1,1] # for more channels
 strides_2 = [1,2,2,1] # to reduce dimention
+
+in_chan = 1
+out_chan = 2
 
 # local
 in_chan_11 = 1
