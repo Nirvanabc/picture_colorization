@@ -4,7 +4,9 @@ height = width = 600
 padding = "SAME"
 max_length = 800
 
-epochs = 30 # 260
+epochs = 100 # 260
+print_each = 2
+
 kernel = 3
 
 strides_1 = [1,1,1,1] # for more channels

@@ -11,10 +11,10 @@ def bias_variable(shape):
     initial = tf.constant(0.1, shape=shape)
     return tf.Variable(initial)
 
+is_training = tf.placeholder(tf.bool)
 
 # change "is_training" !!!
-def conv_layer(kernel, in_chan, out_chan, tensor, strides,
-               is_training = True):
+def conv_layer(kernel, in_chan, out_chan, tensor, strides):
     W_conv = weight_variable([kernel, kernel, in_chan,
                                out_chan])
     b_conv = bias_variable([out_chan])
@@ -32,7 +32,7 @@ def conv_layer(kernel, in_chan, out_chan, tensor, strides,
     h = tf.nn.relu(tf.nn.bias_add(batch_norm, b_conv))
     return h
 
-
+# input
 x = tf.placeholder(tf.float32, \
                    shape = [None, height,
                             width, in_chan_11], name='x')
@@ -58,7 +58,7 @@ low_22 = conv_layer(kernel, in_chan_22, out_chan_22, low_21,
                   strides_2)
 
 
-### GLOBALOW_FEATUES_NETWORK
+### GLOBAL_FEATUES_NETWORK
 # h/4*w/4*256 -> h/8*w/8*256 -> h/8*w/8*256
 # fc_512 -> fc_256
 # glob_11 = conv_layer(kernel, chan, chan, low_22,
@@ -102,26 +102,34 @@ fusion_layer = conv_layer(kernel, out_chan_mid, out_chan_col_1,
 ## A VERY WEAK PLACE -- float32 to uint8 !!!
 # fusion_layer = tf.cast(fusion_layer, tf.int32)
 
+def color_layer(layer, in_chan, out_chan):
+    color_upsamp = tf.image.resize_nearest_neighbor(
+        layer,
+        [int(layer.shape[1])*2,
+         int(layer.shape[2])*2])
+    color_conv = conv_layer(
+        kernel,
+        in_chan,
+        out_chan,
+        color_upsamp,
+        strides_1)
+    return color_conv
 
-color_upsamp_1 = tf.image.resize_nearest_neighbor(fusion_layer,
-                             [int(fusion_layer.shape[1])*2,
-                              int(fusion_layer.shape[2])*2])
-color_conv_1 = conv_layer(kernel, out_chan_col_1, out_chan_col_1,
-                         color_upsamp_1, strides_1)
 
-color_upsamp_2 = tf.image.resize_nearest_neighbor(color_conv_1,
-                             [int(color_conv_1.shape[1])*2,
-                              int(color_conv_1.shape[2])*2])
-color_conv_2 = conv_layer(kernel, out_chan_col_1, out_chan_col_2,
-                         color_upsamp_2, strides_1)
+color_layer_1 = color_layer(fusion_layer,
+                            out_chan_col_1,
+                            out_chan_col_1)
 
-color_upsamp_3 = tf.image.resize_nearest_neighbor(color_conv_2,
-                             [int(color_conv_2.shape[1])*2,
-                              int(color_conv_2.shape[2])*2])
-color_conv_3 = conv_layer(kernel, out_chan_col_2, out_chan_col_3,
-                         color_upsamp_3, strides_1)
+color_layer_2 = color_layer(color_layer_1,
+                            out_chan_col_1,
+                            out_chan_col_2)
 
-# yield_batch = convert_to_grayscale(batch_size)
+color_layer_3 = color_layer(color_layer_2,
+                            out_chan_col_2,
+                            out_chan_col_3)
+
+
+yield_batch = convert_to_grayscale(batch_size)
 
 
 ### READOUT LAYER
@@ -129,21 +137,23 @@ W_read = weight_variable([kernel, kernel,
                           out_chan_col_3, out_chan])
 b_read = bias_variable([out_chan])
 
-conv = tf.nn.conv2d(color_conv_3, W_read, strides = strides_1,
+conv = tf.nn.conv2d(color_layer_3, W_read, strides = strides_1,
                         padding=padding)
-y_conv = tf.nn.bias_add(conv, b_read)
-
+y_conv = tf.nn.relu(tf.nn.bias_add(conv, b_read))
+y_conv = y_conv*100
 
 ### now train and evaluate
 cross_entropy = tf.reduce_mean(
     tf.nn.sigmoid_cross_entropy_with_logits(labels=y_, \
                                             logits=y_conv))
-train_step = tf.train.AdadeltaOptimizer().minimize(cross_entropy)
-correct_prediction_1 = tf.norm(y_ - y_conv)
-correct_prediction_2 = tf.norm(y_)
+train_step = tf.train.AdadeltaOptimizer().minimize(
+    cross_entropy)
+correct_prediction = tf.norm(y_ - y_conv)
 
 yield_batch = convert_to_grayscale(batch_size)
 test_batch = next(yield_batch)
+
+extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
 def map_func(x):
     tmp = x
@@ -157,23 +167,26 @@ def map_func(x):
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
-    acc_1 = sess.run(correct_prediction_1, feed_dict=
-                       {x:test_batch[0], y_: test_batch[1]})
-    print(acc_1)
     for i in range(epochs):
         batch = next(yield_batch)
-        _, image_train = sess.run([train_step, y_conv],
+        _, image_train, _ = sess.run([train_step, y_conv,
+                                   extra_update_ops],
                          feed_dict={x: batch[0],
-                                    y_: batch[1]})
-        acc_2 = sess.run(correct_prediction_2, feed_dict=
-                       {x:test_batch[0], y_: test_batch[1]})
+                                    y_: batch[1],
+                                    is_training: True})
+        acc = sess.run(correct_prediction, feed_dict=
+                       {x:test_batch[0], y_: test_batch[1],
+                        is_training: True})
         
-        print("step %d, acc %.4f" % (i, acc))
-        
-        image_train = map_func(image_train[0])
-        predicted_image = np.concatenate((batch[0][0],
-                                          image_train),
-                                         axis=3)
-        image_uint = sess.run(tf.cast(predicted_image, tf.uint8))
-        rgb_image = cv2.cvtColor(image_uint, cv2.COLOR_YUV2RGB)
-        cv2.imwrite("new_%d.jpeg" % i, rgb_image)
+        print("step %d, acc %.2f" % (i, acc))
+        if i % print_each == 0:
+            image_train = map_func(image_train[0])
+            predicted_image = np.concatenate((batch[0][0],
+                                              image_train),
+                                             axis=2)
+            image_uint = sess.run(tf.cast(predicted_image,
+                                          tf.uint8))
+            rgb_image = cv2.cvtColor(image_uint,
+                                     cv2.COLOR_YUV2RGB)
+            cv2.imwrite("new_%d.jpeg" % i, rgb_image)
+            cv2.imwrite("new_%d_gray.jpeg" % i, batch[0][0])
