@@ -1,11 +1,13 @@
+const = 70
+
 batch_size = 5
 # test_batch_size = 200
 height = width = 600
 padding = "SAME"
 max_length = 800
 
-epochs = 100 # 260
-print_each = 2
+epochs = 40 # 260
+print_each = 3
 
 kernel = 3
 
