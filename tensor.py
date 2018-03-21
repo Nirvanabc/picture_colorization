@@ -141,7 +141,7 @@ conv = tf.nn.conv2d(color_layer_3, W_read, strides = strides_1,
                         padding=padding)
 ## relu
 y_conv = tf.nn.bias_add(conv, b_read)
-y_conv = y_conv*const
+y_conv = y_conv*100
 
 ### now train and evaluate
 cross_entropy = tf.reduce_mean(
@@ -156,45 +156,43 @@ test_batch = next(yield_batch)
 
 extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
+def map_func(x):
+    tmp = x
+    for raw in tmp:
+        for col in raw:
+            for i,num in enumerate(col):
+                if num < 0: col[i] = 0
+                elif num > 255: col[i] = 255
+    return np.array(tmp)
+            
+
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     for i in range(epochs):
         batch = next(yield_batch)
-        sess.run([train_step,
-                  extra_update_ops],
-                 feed_dict={x: batch[0],
-                            y_: batch[1],
-                            is_training: True})
+        _, image_train, _ = sess.run([train_step, y_conv,
+                                      extra_update_ops],
+                                     feed_dict={
+                                         x: batch[0],
+                                         y_: batch[1],
+                                         is_training: True})
         if i % print_each == 0:
-            
-            acc, image_train = sess.run(
-                [correct_prediction, y_conv],
+            image_train = map_func(image_train[0])
+            acc = sess.run(
+                correct_prediction,
                 feed_dict= {x:test_batch[0], y_: test_batch[1],
-                 is_training: True})
-            
+                            is_training: True})
             print("step %d, acc %.2f" % (i, acc))
+        
 
             # image_train = map_func(image_train[0])
             predicted_image = np.concatenate((batch[0][0],
-                                              image_train[0]),
+                                              image_train),
                                              axis=2)
             image_uint = sess.run(tf.cast(predicted_image,
                                           tf.uint8))
             rgb_image = cv2.cvtColor(image_uint,
                                      cv2.COLOR_YUV2RGB)
-            # rgb_image = map_func(rgb_image)
             cv2.imwrite("new_%d.jpeg" % i, rgb_image)
-            # cv2.imwrite("new_%d_gray.jpeg" % i, batch[0][0])
 
-
-
-# def map_func(x):
-#     tmp = x
-#     for raw in tmp:
-#         for col in raw:
-#             for i,num in enumerate(col):
-#                 if num < 0: col[i] = 0
-#                 elif num > 255: col[i] = 255
-#     return np.array(tmp)
-# 
