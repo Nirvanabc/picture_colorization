@@ -5,7 +5,7 @@ height = width = 600
 padding = "SAME"
 max_length = 800
 
-epochs = 2 # 260
+epochs = 260 # 260
 print_each = 1
 
 kernel = 3

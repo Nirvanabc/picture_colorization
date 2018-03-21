@@ -30,6 +30,7 @@ def conv_layer(kernel, in_chan, out_chan, tensor, strides):
         training = is_training)
 
     h = tf.nn.relu(tf.nn.bias_add(batch_norm, b_conv))
+    # h = tf.nn.relu(tf.nn.bias_add(conv, b_conv))
     return h
 
 # input
@@ -139,9 +140,9 @@ b_read = bias_variable([out_chan])
 
 conv = tf.nn.conv2d(color_layer_3, W_read, strides = strides_1,
                         padding=padding)
-## relu
+
 y_conv = tf.nn.bias_add(conv, b_read)
-y_conv = y_conv*100
+y_conv = y_conv * 100
 
 ### now train and evaluate
 cross_entropy = tf.reduce_mean(
@@ -161,7 +162,7 @@ def map_func(x):
     for raw in tmp:
         for col in raw:
             for i,num in enumerate(col):
-                if num < 0: col[i] = 0
+                if num < 0: col[i] = - num
                 elif num > 255: col[i] = 255
     return np.array(tmp)
             
@@ -171,14 +172,14 @@ with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     for i in range(epochs):
         batch = next(yield_batch)
-        _, image_train, _ = sess.run([train_step, y_conv,
+        _, image_train_0, _ = sess.run([train_step, y_conv,
                                       extra_update_ops],
                                      feed_dict={
                                          x: batch[0],
                                          y_: batch[1],
                                          is_training: True})
         if i % print_each == 0:
-            image_train = map_func(image_train[0])
+            image_train = map_func(image_train_0[0])
             acc = sess.run(
                 correct_prediction,
                 feed_dict= {x:test_batch[0], y_: test_batch[1],
