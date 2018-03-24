@@ -1,11 +1,11 @@
 
-batch_size = 5
+batch_size = 4
 # test_batch_size = 200
 height = width = 600
 padding = "SAME"
 max_length = 800
 
-epochs = 260 # 260
+epochs = 50 # 260
 print_each = 1
 
 kernel = 3
@@ -17,7 +17,6 @@ in_chan = 1
 out_chan = 2
 
 # local
-in_chan_11 = 1
 out_chan_11 = 64
 
 in_chan_12 = out_chan_11

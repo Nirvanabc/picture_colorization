@@ -36,7 +36,7 @@ def conv_layer(kernel, in_chan, out_chan, tensor, strides):
 # input
 x = tf.placeholder(tf.float32, \
                    shape = [None, height,
-                            width, in_chan_11], name='x')
+                            width, in_chan], name='x')
 
 # target
 y_ = tf.placeholder(tf.float32, \
@@ -46,7 +46,7 @@ y_ = tf.placeholder(tf.float32, \
 
 ### LOW_LAYER_FEATUES_NETWORK
 # h*w*3 -> h/2*w/2*64 -> h/2*w/2*128
-low_11 = conv_layer(kernel, in_chan_11, out_chan_11, x,
+low_11 = conv_layer(kernel, in_chan, out_chan_11, x,
                   strides_2)
 low_12 = conv_layer(kernel, in_chan_12, out_chan_12, low_11,
                   strides_1)
@@ -141,8 +141,8 @@ b_read = bias_variable([out_chan])
 conv = tf.nn.conv2d(color_layer_3, W_read, strides = strides_1,
                         padding=padding)
 
-y_conv = tf.nn.bias_add(conv, b_read)
-y_conv = y_conv * 100
+# y_conv = tf.nn.bias_add(conv, b_read)
+y_conv = conv * 170
 
 ### now train and evaluate
 cross_entropy = tf.reduce_mean(
@@ -172,15 +172,17 @@ with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     for i in range(epochs):
         batch = next(yield_batch)
-        _, image_train_0, _ = sess.run([train_step, y_conv,
-                                      extra_update_ops],
-                                     feed_dict={
-                                         x: batch[0],
-                                         y_: batch[1],
-                                         is_training: True})
+        _, _, image_train_0= sess.run([
+                                       extra_update_ops,
+                                       train_step,
+                                       y_conv],
+                                      feed_dict={
+                                          x: batch[0],
+                                          y_: batch[1],
+                                          is_training: True})
         if i % print_each == 0:
             image_train = map_func(image_train_0[0])
-            acc = sess.run(
+            acc = sess.run( 
                 correct_prediction,
                 feed_dict= {x:test_batch[0], y_: test_batch[1],
                             is_training: True})
