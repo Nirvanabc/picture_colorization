@@ -9,6 +9,7 @@ from constants import *
 # the beginning
 # 2) It should return array of real sizes to print real image
 # if I want
+
 def convert_to_grayscale(batch_size):
     '''
     use next(batch) to obtain image list
@@ -21,7 +22,7 @@ def convert_to_grayscale(batch_size):
         image = cv2.imread("airplane/image_" +
                            index +
                            ".jpg")
-        image_yuv = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
+        image_yuv = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
         square_image = tf.image.resize_images(image_yuv,
                                               [height, width])
         batch.append(square_image)

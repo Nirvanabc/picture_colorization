@@ -1,12 +1,15 @@
 
-batch_size = 4
+center = True
+scale = True
+
+batch_size = 3
 # test_batch_size = 200
-height = width = 600
+height = width = 512
 padding = "SAME"
 max_length = 800
 
-epochs = 50 # 260
-print_each = 1
+epochs = 200 # 260
+print_each = 2
 
 kernel = 3
 
@@ -32,6 +35,7 @@ out_chan_22 = out_chan_21 * 2
 
 # global
 chan = out_chan_22
+
 # out_chan_fc_1 = 512 too much neurons
 out_chan_fc_1 = 512
 out_chan_fc_2 = 256
