@@ -1,7 +1,8 @@
-
+center = True
+scale = True
 batch_size = 5
 # test_batch_size = 200
-height = width = 600
+height = width = 400
 padding = "SAME"
 max_length = 800
 
