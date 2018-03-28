@@ -25,11 +25,10 @@ def conv_layer(kernel, in_chan, out_chan, tensor, strides):
         axis=-1,
         momentum=0.9,
         epsilon=0.001,
-        center=True,
-        scale=True,
+        center=center,
+        scale=scale,
         training = is_training)
-
-    h = tf.nn.relu(tf.nn.bias_add(batch_norm, b_conv))
+    h = tf.nn.bias_add(batch_norm, b_conv)
     # h = tf.nn.relu(tf.nn.bias_add(conv, b_conv))
     return h
 
@@ -130,10 +129,10 @@ color_layer_3 = color_layer(color_layer_2,
                             out_chan_col_3)
 
 
-yield_batch = convert_to_grayscale(batch_size)
-
-
 ### READOUT LAYER
+mul = tf.Variable(60.0)
+add = tf.Variable(128.0)
+
 W_read = weight_variable([kernel, kernel,
                           out_chan_col_3, out_chan])
 b_read = bias_variable([out_chan])
@@ -141,59 +140,60 @@ b_read = bias_variable([out_chan])
 conv = tf.nn.conv2d(color_layer_3, W_read, strides = strides_1,
                         padding=padding)
 
-y_conv = tf.nn.bias_add(conv, b_read)
-y_conv = y_conv * 100
+# to make real colors from scaled and sentered channels
+h = conv * mul
+y_conv = h + add
+
 
 ### now train and evaluate
-cross_entropy = tf.reduce_mean(
-    tf.nn.sigmoid_cross_entropy_with_logits(labels=y_, \
-                                            logits=y_conv))
-train_step = tf.train.AdadeltaOptimizer().minimize(
-    cross_entropy)
 correct_prediction = tf.norm(y_ - y_conv)
+# cross_entropy = tf.reduce_mean(
+#     tf.nn.sigmoid_cross_entropy_with_logits(labels=y_, \
+#                                             logits=y_conv))
+train_step = tf.train.AdadeltaOptimizer().minimize(
+    correct_prediction)
 
-yield_batch = convert_to_grayscale(batch_size)
-test_batch = next(yield_batch)
+
+yield_batch = get_batch(batch_size)
 
 extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
-def map_func(x):
-    tmp = x
-    for raw in tmp:
-        for col in raw:
-            for i,num in enumerate(col):
-                if num < 0: col[i] = - num
-                elif num > 255: col[i] = 255
-    return np.array(tmp)
+# def map_func(x):
+#     tmp = x
+#     for raw in tmp:
+#         for col in raw:
+#             for i,num in enumerate(col):
+#                 col[i] += 128
+#     return np.array(tmp)
             
-
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
-    for i in range(epochs):
-        batch = next(yield_batch)
-        _, image_train_0, _ = sess.run([train_step, y_conv,
-                                      extra_update_ops],
-                                     feed_dict={
-                                         x: batch[0],
-                                         y_: batch[1],
-                                         is_training: True})
-        if i % print_each == 0:
-            image_train = map_func(image_train_0[0])
-            acc = sess.run(
-                correct_prediction,
-                feed_dict= {x:test_batch[0], y_: test_batch[1],
-                            is_training: True})
-            print("step %d, acc %.2f" % (i, acc))
-        
-
-            # image_train = map_func(image_train[0])
-            predicted_image = np.concatenate((batch[0][0],
-                                              image_train),
-                                             axis=2)
-            image_uint = sess.run(tf.cast(predicted_image,
-                                          tf.uint8))
-            rgb_image = cv2.cvtColor(image_uint,
-                                     cv2.COLOR_YUV2BGR)
-            cv2.imwrite("new_%d.jpeg" % i, rgb_image)
-
+    for j in range(epochs):
+        for i in range (iterations):
+            batch = next(yield_batch)
+            sess.run([train_step,
+                      extra_update_ops],
+                     feed_dict={
+                         x: batch[0],
+                         y_: batch[1],
+                         is_training: True})
+            
+            if i % print_each == 0:
+                acc, image_train_0 = sess.run(
+                    [correct_prediction,
+                     y_conv],
+                    feed_dict = {x: batch[0],
+                                 y_: batch[1],
+                                 is_training: True})
+                image_train = image_train_0[0]
+                # image_train = map_func(image_train_0[0])
+                predicted_image = np.concatenate((batch[0][0],
+                                                  image_train),
+                                                 axis=2)
+                image_uint = sess.run(tf.cast(predicted_image,
+                                              tf.uint8))
+                rgb_image = cv2.cvtColor(image_uint,
+                                         cv2.COLOR_LAB2BGR)
+                cv2.imwrite("new_%d.jpeg" % i, rgb_image)
+                print("step %d, acc %.2f epoch %d" % (i, acc, j))
