@@ -1,15 +1,23 @@
-center = True
-scale = True
+# general constants
 batch_size = 5
-# test_batch_size = 200
 height = width = 400
 padding = "SAME"
 max_length = 800
 iterations = int(max_length / batch_size)
+model_data = './saved/my_model'
+
+
+# batch_normalization
+center = True
+scale = True
+
 
 epochs = 20 # 260
+save_each = 4
 print_each = 1
 
+
+# convolutional info
 kernel = 3
 
 strides_1 = [1,1,1,1] # for more channels
@@ -30,15 +38,12 @@ in_chan_21 = out_chan_21 = out_chan_12
 in_chan_22 = out_chan_21
 out_chan_22 = out_chan_21 * 2
 
-# in_chan_31 = ...too much neurons
-
-
-# global
-chan = out_chan_22
-# out_chan_fc_1 = 512 too much neurons
-out_chan_fc_1 = 512
-out_chan_fc_2 = 256
-
+# not used now
+# # global
+# chan = out_chan_22
+# out_chan_fc_1 = 512
+# out_chan_fc_2 = 256
+# 
 # middle
 out_chan_mid = in_chan_mid = out_chan_22
 

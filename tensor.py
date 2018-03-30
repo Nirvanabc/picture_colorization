@@ -147,29 +147,25 @@ y_conv = h + add
 
 ### now train and evaluate
 correct_prediction = tf.norm(y_ - y_conv)
+tf.summary.scalar('loss', correct_prediction)
 # cross_entropy = tf.reduce_mean(
 #     tf.nn.sigmoid_cross_entropy_with_logits(labels=y_, \
 #                                             logits=y_conv))
 train_step = tf.train.AdadeltaOptimizer().minimize(
     correct_prediction)
 
-
-yield_batch = get_batch(batch_size)
+merged = tf.summary.merge_all()
 
 extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
-# def map_func(x):
-#     tmp = x
-#     for raw in tmp:
-#         for col in raw:
-#             for i,num in enumerate(col):
-#                 col[i] += 128
-#     return np.array(tmp)
-            
 
 with tf.Session() as sess:
+    train_writer = tf.summary.FileWriter(
+        "output/train", sess.graph)
+    saver = tf.train.Saver()
     sess.run(tf.global_variables_initializer())
     for j in range(epochs):
+        yield_batch = get_batch(batch_size)
         for i in range (iterations):
             batch = next(yield_batch)
             sess.run([train_step,
@@ -180,13 +176,15 @@ with tf.Session() as sess:
                          is_training: True})
             
             if i % print_each == 0:
-                acc, image_train_0 = sess.run(
+                acc, image_train_0, summary = sess.run(
                     [correct_prediction,
-                     y_conv],
+                     y_conv,
+                     merged],
                     feed_dict = {x: batch[0],
                                  y_: batch[1],
                                  is_training: True})
                 image_train = image_train_0[0]
+                train_writer.add_summary(summary, i)
                 # image_train = map_func(image_train_0[0])
                 predicted_image = np.concatenate((batch[0][0],
                                                   image_train),
@@ -197,3 +195,5 @@ with tf.Session() as sess:
                                          cv2.COLOR_LAB2BGR)
                 cv2.imwrite("new_%d.jpeg" % i, rgb_image)
                 print("step %d, acc %.2f epoch %d" % (i, acc, j))
+            if i % save_each == 0:
+                saver.save(sess, model_data, global_step=i)
