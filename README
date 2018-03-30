@@ -1,3 +1,5 @@
+уходит в серый
+
 play_with_image.py -- препроцессинг (Lab из BRG)
 
 tensor.py -- нейронная сеть
@@ -8,5 +10,3 @@ tensor.py -- нейронная сеть
 сайты:
 1. http://hi.cs.waseda.ac.jp/~iizuka/projects/colorization/data/colorization_sig2016.pdf -- оригинальная статья
 
-на будущее:
-2. для применения стиля: https://github.com/cysmith/neural-style-tf/blob/master/neural_style.py
