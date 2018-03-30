@@ -1,24 +1,12 @@
-CNN for image colorization
-all images are padded with black (white?) frame to be 400*400*3
+play_with_image.py -- препроцессинг (Lab из BRG)
 
-play_with_image.py -- препроцессинг изображений (чёрно-белые из
-		   цветных, Lab из RGB ets)
-
-tensor.py -- нейронная сеть (на данный момент отсутствует)
+tensor.py -- нейронная сеть
 
 
-
+Работает как с нормализацией тестовых данных, так и без. (сложно сказать, что получается лучше).
 
 сайты:
-1. https://arxiv.org/pdf/1603.08511.pdf#cite.cheng2015deep  --
-   оригинальная статья Colorful Image Colorization
-   (мы по ней делаем? или по 3?)
+1. http://hi.cs.waseda.ac.jp/~iizuka/projects/colorization/data/colorization_sig2016.pdf -- оригинальная статья
 
-2. http://richzhang.github.io/colorization/  -- вебсайт 1. см.
-   код на github
-
-3. http://tinyclouds.org/colorize/  -- Automatic Colorization
-   интересная статья, в ней сложнее сеть (точно? прочитай,
-   наконец, 1.) и нет кода (поищи ещё раз)
-
-4. для применения стиля: https://github.com/cysmith/neural-style-tf/blob/master/neural_style.py
+на будущее:
+2. для применения стиля: https://github.com/cysmith/neural-style-tf/blob/master/neural_style.py

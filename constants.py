@@ -5,10 +5,12 @@ batch_size = 5
 height = width = 400
 padding = "SAME"
 max_length = 800
-iterations = int(max_length / batch_size)
 
-epochs = 20 # 260
-print_each = 1
+iterations = 3
+# iterations = int(max_length / batch_size)
+
+epochs = 1 # 260
+print_each = 2
 
 kernel = 3
 

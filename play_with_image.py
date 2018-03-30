@@ -18,7 +18,7 @@ def get_batch(batch_size):
     count = 0
     for i in range(1, max_length - max_length % batch_size + 1):
         index = '0'*(4 - len(str(i))) + str(i)
-        image = cv2.imread("airplane/image_" +
+        image = cv2.imread("sunflower/image_" +
                            index +
                            ".jpg")
         image_yuv = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
