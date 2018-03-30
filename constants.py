@@ -6,11 +6,11 @@ height = width = 400
 padding = "SAME"
 max_length = 800
 
-iterations = 3
+iterations = 30
 # iterations = int(max_length / batch_size)
 
 epochs = 1 # 260
-print_each = 2
+print_each = 1
 
 kernel = 3
 

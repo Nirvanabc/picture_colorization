@@ -1,0 +1,12 @@
+1) The input of the model is
+the grayscale image while the target output is the a*b* components
+of the CIE L*a*b* colorspace.  The a*b* components are globally
+normalized so they lie in the [0;1] range of the Sigmoid transfer
+function. We then scale the target output to the size of the output
+of the colorization network and compute the MSE between the output and
+target output as the loss
+
+Что это значит?
+
+2) Что должно быть с нормализацией?
+3) 

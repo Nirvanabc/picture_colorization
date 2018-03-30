@@ -1,0 +1,54 @@
+
+1) no activation func
+   center and scale -- True
+   y_conv = conv + add
+   conv_layer: True True
+   run: True False
+
+step 0, acc 5047744.50 epoch 0
+step 2, acc 251325.38 epoch 0
+step 4, acc 70886.38 epoch 0
+step 6, acc 44838.01 epoch 0
+step 8, acc 39712.09 epoch 0
+step 10, acc 40213.32 epoch 0
+step 12, acc 37799.23 epoch 0
+step 14, acc 38603.90 epoch 0
+
+на 8-м ушло в ч-б
+14: np.amax(image_train_0)  153.18465, amin:  106
+
+2) relu и без + add: жутко красные фото (видимо, в него и уйдёт), все значения около нуля,
+inary was not compiled to use: AVX2 FMA
+step 0, acc 1474520.88 epoch 0
+step 2, acc 363316.00 epoch 0
+step 4, acc 217756.03 epoch 0
+step 6, acc 196575.69 epoch 0
+step 8, acc 188572.02 epoch 0
+step 10, acc 189948.36 epoch 0
+
+
+np.amin(image_train)  -26.94297
+
+np.amax(image_train)  10.7756
+inary was not compiled to use: AVX2 FMA
+
+3)
+center = False
+опять все около нуля
+
+4) * conv + add, без relu
+step 0, acc 374675264.00 epoch 0
+step 2, acc 17680010.00 epoch 0
+step 4, acc 3763030.75 epoch 0
+step 6, acc 1332316.50 epoch 0
+step 8, acc 716289.81 epoch 0
+step 10, acc 449991.06 epoch 0
+
+np.amin(image_train)  -2189.9668
+np.amax(image_train)   2957.6863
+
+очень сильные шумы.
+
+5) *60, + 128 шум и none.
+
+6) sigmoid to y_conv and y_
